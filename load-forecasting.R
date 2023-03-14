@@ -90,3 +90,88 @@ isBeforeNonWork <- rbind(!DATA[1:(nrow(DATA)-24),"Workday"],matrix(TRUE,24,1))
 
 #saveRDS(object = dailyDATA, file = "dailyDATA.rds")
 #write.csv(dailyDATA,"daily_data.csv", row.names = FALSE)
+
+
+
+###################### Import Hourly Data ######################
+
+DATA <- readRDS("DATA.rds")     # load already pre-processed data
+
+# split dataset into train and test sets
+train_set <- DATA %>% filter(year(Time) <= 2018)
+test_set <- DATA %>% filter(year(Time) > 2018)
+
+
+
+###################### Exploratory Data Analysis ######################
+
+
+# first visualize full data
+
+# plot Demand series
+ggplot(DATA,aes(x=Time, y=Demand/1000000))+
+  geom_line(size=0.25,show.legend = FALSE) + theme_bw() +
+  labs(title="Electricity demand in Poland (2016-2019)", y = "Demand [GW]") + 
+  theme(axis.text.x=element_text(size=11))
+
+# plot Temperature series
+ggplot(DATA,aes(x=Time, y=Temperature))+
+  geom_line(size=0.25,show.legend = FALSE) + theme_bw() +
+  labs(title="Temperature in Poland (2016-2019)", y="Temperature [°C]") + 
+  theme(axis.text.x=element_text(size=11))
+
+
+# analysis of training data
+
+# autocorrelation (ACF) and partial autocorrelation (PACF)
+train_set %>% ACF(Demand,lag_max=216) %>% 
+  autoplot() + labs(title = "Autocorrelation (ACF) of electricity demand ") +
+  xlab("lags") + theme_bw()
+
+train_set %>% PACF(Demand,lag_max=216) %>% 
+  autoplot() + labs(title = "Partial autocorrelation (PACF) of electricity demand ") +
+  xlab("lags") + theme_bw()
+
+# KPSS unit root test
+train_set %>%     
+  features(Demand, unitroot_kpss)
+
+train_set$Demand %>% forecast::msts(seasonal.periods = c(24,24*7,24*365.25)) %>% 
+  forecast::mstl() %>% autoplot()
+
+# STL decomposition
+train_set %>%
+  model(
+    STL(Demand ~ season("1 day", window=30) + 
+          season(period = "1 week", window=Inf) +
+          season(period = "1 year", window=Inf),
+        robust = TRUE)
+  ) %>%
+  components() %>%
+  autoplot() + labs(x = "Observation") + theme_bw()
+
+
+# label obs as "summer" months and "day" hours
+train_set$Summer <- month(train_set$Time, label=TRUE) %in% c("May","Jun","Jul","Aug","Sep")
+train_set$Day <- hour(train_set$Time) %in% seq(7,21)
+
+
+# histograms:
+ggplot(train_set, aes(x = Demand/10^6)) + 
+  geom_histogram(alpha = 0.5, position = "identity", binwidth=0.15)+
+  theme_bw()+labs(x="Demand [GW]",title="Histogram")
+
+ggplot(train_set, aes(x = Demand/10^6, fill = Summer)) + 
+  geom_histogram(alpha = 0.75, position = "identity", binwidth=0.15)+
+  theme_bw()+labs(x="Demand [GW]",title="Histogram: summer and winter")+
+  scale_fill_manual(values = c("cornflowerblue","orange2"))
+
+ggplot(train_set, aes(x = Demand/10^6, fill = Workday)) + 
+  geom_histogram(alpha = 0.8, position = "identity", binwidth=0.15)+
+  theme_bw()+labs(x="Demand [GW]",title="Histogram: working and non-working days")+
+  scale_fill_manual(values = c("#56b1f7","#0C3864"))
+
+ggplot(train_set, aes(x = Demand/10^6, fill = Day)) + 
+  geom_histogram(alpha = 0.8, position = "identity", binwidth=0.15)+
+  theme_bw()+labs(x="Demand [GW]",title="Histogram: day and night")+
+  scale_fill_manual(values = c("#091B44","#78D3F9"))
