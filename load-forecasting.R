@@ -175,3 +175,96 @@ ggplot(train_set, aes(x = Demand/10^6, fill = Day)) +
   geom_histogram(alpha = 0.8, position = "identity", binwidth=0.15)+
   theme_bw()+labs(x="Demand [GW]",title="Histogram: day and night")+
   scale_fill_manual(values = c("#091B44","#78D3F9"))
+
+
+
+# Zoom-in series: working vs non-working days
+
+# Full train_set
+ggplot(train_set,aes(x=Time, y=Demand/1000000, color=as.integer(!Workday)))+
+  geom_line(size=0.25,show.legend = FALSE)+theme_bw()+
+  labs(title="Electricity demand in Poland: working vs non-working days", y = "Demand [GW]")+ 
+  theme(axis.text.x=element_text(size=9),axis.title=element_text(size=9.5), plot.title=element_text(size=11))
+
+#first 2 weeks of January 2016
+window <- train_set %>% filter(date(Time) < "2016-01-15")
+ggplot(window,aes(x=Time, y=Demand/1000000,color=as.integer(!Workday)))+
+  geom_line(size=1.2, show.legend = FALSE)+
+  scale_x_datetime(date_breaks="2 days")+theme_bw()+theme(axis.text.x=element_text(size=10))+
+  labs(title="Electricity demand in Poland: first two weeks of January 2016", y = "Demand [GW]")
+
+#last 2 months of 2018
+window <- train_set %>% filter(date(Time) > "2018-10-31")
+ggplot(window,aes(x=Time, y=Demand/1000000,color=as.integer(!Workday)))+
+  geom_line(size=0.75, show.legend = FALSE)+
+  scale_x_datetime(date_breaks="2 weeks")+theme_bw()+
+  theme(axis.text.x=element_text(size=10))+
+  labs(title="Electricity demand in Poland: last two months of 2018", x = "Date", y = "Demand [GW]")
+
+
+
+# day of week effect - difference in distribution
+train_set %>% index_by(Wday = ~ wday(.,label=TRUE)) %>% summarize(mean(Demand))
+ggplot(train_set,aes(x=Day_of_week, y=Demand/1000000,fill=Day_of_week)) +
+  geom_boxplot(show.legend = FALSE) + theme_bw() + 
+  theme(axis.text.x=element_text(size=11), plot.title=element_text(size=13.2)) +
+  labs(title="Day of the week effect: electricity demand boxplots", y = "Demand") +
+  scale_fill_brewer(palette = "Set2")
+
+# day of week effect - daily curves
+train_set$hm <- format(as.POSIXct(train_set$Time),"%H:%M")
+dow_effect <- as.data.frame(train_set) %>% group_by(hm,Day_of_week) %>% summarize(Demand=median(Demand))
+ggplot(dow_effect,aes(x = hm, y = Demand/1000000, color = Day_of_week,
+                      group = Day_of_week)) +
+  geom_line(size=1) + labs(x = "Time of day", y = "Electricity demand [GW]", 
+                           title="Day of the week effect: median electricity demand by time of day") + 
+  theme_bw()+ theme(axis.text.x=element_text(size=11), plot.title=element_text(size=13.2),
+                    legend.text = element_text(size=10.5)) + 
+  scale_colour_brewer(palette = "Dark2") +
+  scale_x_discrete(breaks=c("00:00","03:00","06:00","09:00","12:00","15:00",
+                            "18:00","21:00"))
+
+
+daily_summer <- as.data.frame(train_set) %>% filter(Summer==TRUE) %>% group_by(hm,Workday) %>% summarize(Demand=median(Demand))
+daily_winter <- as.data.frame(train_set) %>% filter(Summer==FALSE) %>% group_by(hm,Workday) %>% summarize(Demand=median(Demand))
+
+
+hotmonths <- c("May","Jun","Jul")
+nothotmonths <- c("Nov","Dec","Jan")
+daily_summer <- as.data.frame(train_set) %>% filter(month(Time,label=TRUE) %in% hotmonths) %>% group_by(hm,Workday) %>% summarize(Demand=median(Demand))
+daily_winter <- as.data.frame(train_set) %>% filter(month(Time,label=TRUE) %in% nothotmonths) %>% group_by(hm,Workday) %>% summarize(Demand=median(Demand))
+
+
+# demand by time of day in hottest months
+ggplot(daily_summer,aes(x = hm, y = Demand/1000000, color = Workday,
+                        group = Workday)) +
+  geom_line(size=1) + labs(x = "Time of day", y = "Electricity demand [GW]", 
+                           title="Demand in May - July") + 
+  theme_bw()+ theme(axis.text.x=element_text(size=11), plot.title=element_text(size=13.2),
+                    legend.text = element_text(size=10.5)) +
+  scale_colour_manual(values = c("#56b1f7","#0C3864")) +
+  scale_x_discrete(breaks=c("06:00","12:00","18:00"))
+
+# demand by time of day in coldest months
+ggplot(daily_winter,aes(x = hm, y = Demand/1000000, color = Workday,
+                        group = Workday)) +
+  geom_line(size=1) + labs(x = "Time of day", y = "Electricity demand [GW]", 
+                           title="Demand in November - January") + 
+  theme_bw()+ theme(axis.text.x=element_text(size=11), plot.title=element_text(size=13.2),
+                    legend.text = element_text(size=10.5)) +
+  scale_colour_manual(values = c("#56b1f7","#0C3864")) +
+  scale_x_discrete(breaks=c("06:00","12:00","18:00"))
+
+
+# yearly seasonality - demand by time of day in different months
+train_set$Month <- month(train_set$Time,label=TRUE)
+daily_month <- as.data.frame(train_set) %>% group_by(hm,Month) %>% summarize(Demand=median(Demand))
+
+ggplot(daily_month,aes(x = hm, y = Demand/1000000, color = Month,
+                       group = Month)) +
+  geom_line(size=0.9) + labs(x = "Time of day", y = "Electricity demand [GW]", 
+                             title="Yearly seasonality effect: demand by time of day") + 
+  theme_bw()+ theme(axis.text.x=element_text(size=11), plot.title=element_text(size=13.2),
+                    legend.text = element_text(size=10.5))+
+  scale_x_discrete(breaks=c("00:00","03:00","06:00","09:00","12:00","15:00",
+                            "18:00","21:00")) + scale_colour_manual(values = c("#6087E0","#87C7E7","#8BFEF7","#6CFAA6","#8FE467","#86D800","#C5D800","#EED100","#EEA12A","#9672A6","#A306E7","#4900C0"))
