@@ -268,3 +268,60 @@ ggplot(daily_month,aes(x = hm, y = Demand/1000000, color = Month,
                     legend.text = element_text(size=10.5))+
   scale_x_discrete(breaks=c("00:00","03:00","06:00","09:00","12:00","15:00",
                             "18:00","21:00")) + scale_colour_manual(values = c("#6087E0","#87C7E7","#8BFEF7","#6CFAA6","#8FE467","#86D800","#C5D800","#EED100","#EEA12A","#9672A6","#A306E7","#4900C0"))
+
+
+
+# relationship between Demand and Temperature
+
+# summer vs winter
+ggplot(train_set,aes(x = Temperature, y = Demand/1000000, color = Summer)) +
+  geom_point(size=0.9, alpha=train_set$Workday) + theme(axis.text=element_text(size=11),
+                                                        legend.text = element_text(size=12)) +
+  labs(x = "Temperature [°C]",
+       y = "Electricity demand [GW]", 
+       title="Relationship demand ~ temperature: summer vs. winter") + 
+  theme_bw() + 
+  scale_colour_manual(values = c("cornflowerblue","orange2"))+
+  guides(color = guide_legend(override.aes = list(size=2)))
+
+# workday vs non-workday
+
+ggplot(train_set[4000:26304,],aes(x = Temperature, y = Demand/1000000, color = Workday)) +
+  geom_point(size=0.9, alpha=0.55) +theme(axis.text=element_text(size=11))+
+  labs(x = "Temperature [°C]",
+       y = "Electricity demand [GW]",
+       title="Relationship demand ~ temperature: working vs. non-working days")+
+  theme_bw()+
+  scale_colour_manual(values = c("#56b1f7","#0C3864"))+
+  guides(color = guide_legend(override.aes = list(size=2)))
+
+# day vs night (workday only)
+
+work_only <- train_set %>% filter(Workday==FALSE)
+work_and_day_only <- train_set %>% filter(Workday==TRUE) %>% filter(hour(Time) %in% seq(1,4))
+
+ggplot(train_set,aes(x = Temperature, y = Demand/1000000, color = Day)) +
+  geom_point(size=0.9, alpha=0.6) +theme(axis.text=element_text(size=11))+
+  labs(x = "Temperature [°C]",
+       y = "Electricity demand [GW]",
+       title="Relationship demand ~ temperature (working day only): day vs. night")+
+  theme_bw()+
+  scale_colour_manual(values = c("#091B44","#78D3F9"))+
+  guides(color = guide_legend(override.aes = list(size=2)))
+
+ggplot(work_and_day_only,aes(x = Temperature, y = Demand/1000000)) +
+  geom_point(size=1.15, alpha=0.5) +theme(axis.text=element_text(size=11))+
+  labs(x = "Temperature [°C]",
+       y = "Electricity demand [GW]") + theme_bw()
+
+
+# relationship between lagged temperature (hour before) and demand
+ggplot(train_set,aes(x = lag(Temperature), y = Demand/1000000)) +
+  geom_point(size=1.15, color="#0093CE") +theme(axis.text=element_text(size=11))+
+  labs(x = "Temperature [°C]",
+       y = "Electricity demand [GW]") + theme_bw()
+
+# mean temperature by month
+train_set %>% index_by(Month = ~ yearmonth(.)) %>% summarize(mean(Temperature))
+temp <- as.data.frame(train_set) %>% group_by(yearmonth(Time),Hour) %>% summarise(min(Temperature))
+
