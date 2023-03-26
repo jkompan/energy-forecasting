@@ -325,3 +325,68 @@ ggplot(train_set,aes(x = lag(Temperature), y = Demand/1000000)) +
 train_set %>% index_by(Month = ~ yearmonth(.)) %>% summarize(mean(Temperature))
 temp <- as.data.frame(train_set) %>% group_by(yearmonth(Time),Hour) %>% summarise(min(Temperature))
 
+
+# fit some regression models to training data
+
+# fit simple linear regression
+lm1 <- lm(Demand~Temperature+Workday,data=train_set)
+lm2 <- lm(Demand~NonWeekend_holiday,data=train_set)
+car::vif(lm2)
+summary(lm2)
+
+
+# fit regression with splines
+model1 <- lm(Demand~bs(Temperature, knots = c(16),degree=1),data=train_set)
+model2 <- lm(Demand~bs(Temperature, knots = c(14,20,24),degree=2),data=train_set)
+model3 <- lm(Demand~Temperature + bs(Temperature, knots = c(-2,16,24),degree=3),data=train_set)
+
+#with interactions
+model1Day <- lm(Demand~bs(Temperature, knots = c(-2,12,16,24),degree=1)*Day+Day+bs(Temperature, knots = c(16),degree=1),data=train_set)
+model3Day <- lm(Demand~bs(Temperature, knots = c(-2,12,16,24),degree=3)+Day+ Day*bs(Temperature, knots = c(-2,16,20,24),degree=3),data=train_set)
+
+
+model2wday <- lm(Demand~bs(Temperature, knots = c(-2,12,16,24),degree=1)*Workday+Workday+bs(Temperature, knots = c(16),degree=1),data=train_set)
+model4wday <- lm(Demand~bs(Temperature, knots = c(-2,12,16,24),degree=3)+Workday+Workday*bs(Temperature, knots = c(-2,16,20,24),degree=3),data=train_set)
+
+#train_set$Hour <- as.numeric(sub("(H|S).*","",hm(train_set$hm)))
+train_set$Hour <- factor(hour(train_set$Time))
+day_obs <- train_set %>% filter(Hour %in% seq(7,21))
+night_obs <- train_set %>% filter(!Hour %in% seq(7,21))
+
+work_obs <- train_set %>% filter(Workday==TRUE)
+nonwork_obs <- train_set %>% filter(Workday==FALSE)
+
+
+grid(nx = NULL, ny = NULL,
+     lty = 1,      # Grid line type
+     col = "#E9ECEC", # Grid line color
+     lwd = 1)      # Grid line width
+
+points(train_set$Temperature,train_set$Demand/10^6, col=alpha(rgb(0,0,0), 0.25))
+
+
+points(train_set$Temperature,model3$fitted.values/10^6,col="green",lwd=1.5)
+lines(train_set$Temperature,model2$fitted.values/10^6,col="orange",lwd=2)
+points(train_set$Temperature,model1$fitted.values/10^6,col="red",lwd=1.5)
+
+points(day_obs$Temperature,day_obs$fittedmodel1/10^6,col="red",lwd=1)
+points(night_obs$Temperature,night_obs$fittedmodel1/10^6,col="red",lwd=1)
+
+points(day_obs$Temperature,day_obs$fittedmodel3/10^6,col="green",pch=20)
+points(night_obs$Temperature,night_obs$fittedmodel3/10^6,col="green",pch=20)
+
+
+points(work_obs$Temperature,work_obs$fittedmodel3/10^6,col="red",pch=20)
+points(nonwork_obs$Temperature,nonwork_obs$fittedmodel3/10^6,col="green",pch=20)
+
+points(day_obs$Temperature,day_obs$fittedmodel1/10^6,col="green",pch=20)
+points(night_obs$Temperature,night_obs$fittedmodel1/10^6,col="red",pch=20)
+
+
+
+title("Piecewise linear regression",cex=0.99)
+title("Cubic spline regression",cex=0.99)
+
+
+
+
