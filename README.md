@@ -1,8 +1,8 @@
 # energy-forecasting
 Project aimed at modeling electricity demand in Poland and comparison of different point forecasting techniques.
-![DemandBlackSeries300](https://github.com/jkompan/energy-forecasting/assets/71097861/5a1b43fe-e5db-4286-a5e9-8ea2c47fcefb)
-![TemperatureSeries](https://github.com/jkompan/energy-forecasting/assets/71097861/6b95b897-9891-4943-96c1-0fa2b551cde7)
-![periodogram](https://github.com/jkompan/energy-forecasting/assets/71097861/8744a213-bf9e-47f2-b96a-75aadeb182ad)
+![DemandBlackSeries300](https://github.com/jkompan/energy-forecasting/assets/71097861/5a1b43fe-e5db-4286-a5e9-8ea2c47fcefb | width=600)  
+![TemperatureSeries](https://github.com/jkompan/energy-forecasting/assets/71097861/6b95b897-9891-4943-96c1-0fa2b551cde7 | width=600)
+![periodogram](https://github.com/jkompan/energy-forecasting/assets/71097861/8744a213-bf9e-47f2-b96a-75aadeb182ad | width=250)
 ![day-of-week_Time_of_Day_bigger_labels](https://github.com/jkompan/energy-forecasting/assets/71097861/cd5e352a-6acc-4097-8488-28a32904cdd7)
 ![day_of_week_boxplots](https://github.com/jkompan/energy-forecasting/assets/71097861/a97a248c-8d07-4e3a-85c0-c4422b0abcdb)
 ![summWinter](https://github.com/jkompan/energy-forecasting/assets/71097861/be60e57e-d59c-400e-a9de-3d75b165b2df)
