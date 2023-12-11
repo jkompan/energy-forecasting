@@ -1,6 +1,6 @@
 # energy-forecasting
 <p align="center">
-Project aimed at modeling electricity demand in Poland and comparison of different point forecasting techniques.
+Modeling electricity demand in Poland and comparison of different point forecasting techniques.
 <br>
 <br>
 <img src="https://github.com/jkompan/energy-forecasting/assets/71097861/cd5e352a-6acc-4097-8488-28a32904cdd7" height="210">
